@@ -1,4 +1,4 @@
-const CACHE_NAME = 'spotit-v3';
+const CACHE_NAME = 'spotit-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -25,11 +25,18 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // Skip Firebase requests — always fetch from network
+  // Skip Firebase/API requests — always network
   if (e.request.url.includes('firebasejs') || e.request.url.includes('googleapis') || e.request.url.includes('firestore')) {
     return;
   }
+  // Network-first: try network, fall back to cache (for offline)
   e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request))
+    fetch(e.request)
+      .then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        return response;
+      })
+      .catch(() => caches.match(e.request))
   );
 });

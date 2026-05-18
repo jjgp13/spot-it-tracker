@@ -245,8 +245,8 @@ function loadSessions() {
       renderProgress();
     }, (error) => {
       console.error('Realtime listener error:', error);
-      unsubscribe = null; // Allow retry
-      // Fallback to one-time fetch
+      unsubscribe = null;
+      showToast('Live sync failed: ' + error.code);
       loadSessionsOnce();
     });
 }
@@ -269,6 +269,7 @@ async function loadSessionsOnce() {
     renderProgress();
   } catch (e) {
     console.error('Load failed:', e);
+    showToast('Load failed: ' + (e.code || e.message));
   }
 }
 
