@@ -227,7 +227,7 @@ async function saveTime() {
 // --- Load Sessions (real-time listener) ---
 let unsubscribe = null;
 
-const APP_VERSION = 'v5';
+const APP_VERSION = 'v6';
 
 function loadSessions() {
   if (unsubscribe) return;
