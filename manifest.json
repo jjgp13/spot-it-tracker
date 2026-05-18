@@ -1,0 +1,24 @@
+{
+  "name": "Spot It! Tracker",
+  "short_name": "Spot It!",
+  "description": "Track your Spot It deck-clearing times and improvements",
+  "start_url": "/spot-it-tracker/",
+  "display": "standalone",
+  "background_color": "#1B1B3A",
+  "theme_color": "#1B1B3A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

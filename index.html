@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Spot It! Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1B1B3A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎯</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Setup Modal -->
+  <div id="setup-modal" class="modal">
+    <div class="modal-content">
+      <div class="setup-logo">🎯</div>
+      <h2>Spot It! Tracker</h2>
+      <p class="setup-subtitle">Track your deck-clearing times together!</p>
+
+      <!-- Step 1: Player Name -->
+      <div id="setup-step-1" class="setup-step">
+        <label for="setup-name">What's your name?</label>
+        <input type="text" id="setup-name" placeholder="Enter your name..." maxlength="20" autocomplete="off">
+        <button class="btn btn-primary btn-large" id="setup-next-btn" onclick="setupNext()">Next →</button>
+      </div>
+
+      <!-- Step 2: Firebase Config -->
+      <div id="setup-step-2" class="setup-step hidden">
+        <label>Paste your Firebase config JSON:</label>
+        <textarea id="setup-firebase" rows="8" placeholder='{
+  "apiKey": "...",
+  "authDomain": "...",
+  "projectId": "...",
+  "storageBucket": "...",
+  "messagingSenderId": "...",
+  "appId": "..."
+}'></textarea>
+        <button class="btn btn-primary btn-large" id="setup-connect-btn" onclick="setupConnect()">🔗 Connect &amp; Start</button>
+        <button class="btn btn-link" onclick="toggleSetupHelp()">How do I get this?</button>
+        <div id="setup-help" class="setup-help hidden">
+          <ol>
+            <li>Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a></li>
+            <li>Click <strong>"Create a project"</strong> (name it anything, e.g. "spot-it")</li>
+            <li>Once created, click the <strong>Web icon (&lt;/&gt;)</strong> to add a web app</li>
+            <li>Name it anything (e.g. "spot-it-app"), click <strong>Register</strong></li>
+            <li>Copy the <code>firebaseConfig</code> object and paste it above</li>
+            <li>Go to <strong>Firestore Database</strong> → <strong>Create database</strong> → choose <strong>"Start in test mode"</strong> → pick any region → <strong>Create</strong></li>
+          </ol>
+          <p class="help-note">⚠️ Both you and your partner paste the <strong>same</strong> config so you share data!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="hidden">
+    <!-- Header -->
+    <header class="app-header">
+      <h1>🎯 Spot It!</h1>
+      <button class="player-badge" onclick="showSettings()" title="Settings">
+        <span id="current-player-name">Player</span>
+        <span class="badge-icon">⚙️</span>
+      </button>
+    </header>
+
+    <!-- Views -->
+    <main>
+      <!-- Timer View -->
+      <section id="view-timer" class="view active">
+        <div class="timer-container">
+          <div class="timer-display" id="timer-display">00:00<span class="timer-centis">.00</span></div>
+          <div class="timer-status" id="timer-status">Ready to go!</div>
+        </div>
+        <div class="timer-controls">
+          <button class="btn btn-timer" id="btn-start-stop" onclick="toggleTimer()">
+            <span class="btn-icon" id="btn-start-stop-icon">▶</span>
+            <span id="btn-start-stop-text">START</span>
+          </button>
+          <button class="btn btn-reset" id="btn-reset" onclick="resetTimer()">↺ RESET</button>
+        </div>
+        <button class="btn btn-save hidden" id="btn-save" onclick="saveTime()">
+          💾 Save Time
+        </button>
+      </section>
+
+      <!-- History View -->
+      <section id="view-history" class="view hidden">
+        <div class="history-header">
+          <h2>Session History</h2>
+          <div class="filter-tabs">
+            <button class="filter-btn active" data-filter="all" onclick="filterHistory('all')">All</button>
+          </div>
+        </div>
+        <div id="history-list" class="history-list">
+          <div class="empty-state">Loading...</div>
+        </div>
+      </section>
+
+      <!-- Progress View -->
+      <section id="view-progress" class="view hidden">
+        <h2>Your Progress</h2>
+        <div class="stats-cards" id="stats-cards"></div>
+        <div class="chart-container">
+          <canvas id="progress-chart"></canvas>
+        </div>
+        <div class="chart-empty hidden" id="chart-empty">
+          <p>📊 Complete a few sessions to see your progress chart!</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-view="timer" onclick="switchView('timer')">
+        <span class="nav-icon">⏱️</span>
+        <span class="nav-label">Timer</span>
+      </button>
+      <button class="nav-btn" data-view="history" onclick="switchView('history')">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">History</span>
+      </button>
+      <button class="nav-btn" data-view="progress" onclick="switchView('progress')">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">Progress</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>⚙️ Settings</h2>
+        <button class="btn-close" onclick="closeSettings()">✕</button>
+      </div>
+      <div class="settings-group">
+        <label for="settings-name">Your Name</label>
+        <input type="text" id="settings-name" maxlength="20">
+        <button class="btn btn-primary" onclick="updatePlayerName()">Update Name</button>
+      </div>
+      <div class="settings-group">
+        <label>Data</label>
+        <button class="btn btn-danger" onclick="confirmResetApp()">🗑️ Reset App</button>
+        <p class="help-note">This clears your local settings. Shared data stays in Firebase.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
