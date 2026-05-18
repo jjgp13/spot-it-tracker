@@ -212,6 +212,8 @@ async function saveTime() {
 
     resetTimer();
     showToast(`Saved: ${formatTime(seconds)} 🎉`);
+    // Refresh in case the real-time listener isn't active
+    loadSessionsOnce();
   } catch (e) {
     console.error('Save failed:', e);
     showToast('Save failed — check connection');
@@ -243,6 +245,7 @@ function loadSessions() {
       renderProgress();
     }, (error) => {
       console.error('Realtime listener error:', error);
+      unsubscribe = null; // Allow retry
       // Fallback to one-time fetch
       loadSessionsOnce();
     });
