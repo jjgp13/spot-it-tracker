@@ -96,6 +96,7 @@ function initApp(name) {
   document.getElementById('setup-modal').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('current-player-name').textContent = name;
+  document.getElementById('app-version').textContent = APP_VERSION;
   loadSessions();
 }
 
@@ -226,18 +227,24 @@ async function saveTime() {
 // --- Load Sessions (real-time listener) ---
 let unsubscribe = null;
 
+const APP_VERSION = 'v5';
+
 function loadSessions() {
-  // If already listening, no need to re-subscribe
   if (unsubscribe) return;
 
   unsubscribe = db.collection('spotit_sessions')
-    .orderBy('createdAt', 'desc')
     .limit(500)
     .onSnapshot((snapshot) => {
       allSessions = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+      // Sort client-side (newest first)
+      allSessions.sort((a, b) => {
+        const aTime = a.createdAt?.toMillis?.() || 0;
+        const bTime = b.createdAt?.toMillis?.() || 0;
+        return bTime - aTime;
+      });
 
       assignPlayerColors();
       buildFilterTabs();
@@ -254,7 +261,6 @@ function loadSessions() {
 async function loadSessionsOnce() {
   try {
     const snapshot = await db.collection('spotit_sessions')
-      .orderBy('createdAt', 'desc')
       .limit(500)
       .get();
 
@@ -262,6 +268,12 @@ async function loadSessionsOnce() {
       id: doc.id,
       ...doc.data()
     }));
+    // Sort client-side (newest first)
+    allSessions.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toMillis?.() || 0;
+      return bTime - aTime;
+    });
 
     assignPlayerColors();
     buildFilterTabs();
