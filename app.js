@@ -35,18 +35,13 @@ const COLOR_PALETTE = [
 // --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
   registerSW();
-  const name = localStorage.getItem('spotit_player');
+  initFirebase(FIREBASE_CONFIG);
 
+  const name = localStorage.getItem('spotit_player');
   if (!name) {
     showSetupModal();
   } else {
-    try {
-      initFirebase(FIREBASE_CONFIG);
-      initApp(name);
-    } catch (e) {
-      console.error('Firebase init failed:', e);
-      showSetupModal();
-    }
+    signInAndStart(name);
   }
 });
 
@@ -73,13 +68,20 @@ function setupNext() {
     return;
   }
   localStorage.setItem('spotit_player', name);
+  document.getElementById('setup-next-btn').disabled = true;
+  document.getElementById('setup-next-btn').textContent = 'Connecting...';
+  signInAndStart(name);
+}
 
+async function signInAndStart(name) {
   try {
-    initFirebase(FIREBASE_CONFIG);
+    await firebase.auth().signInAnonymously();
     initApp(name);
   } catch (e) {
-    console.error('Firebase init failed:', e);
+    console.error('Auth failed:', e);
     showToast('Connection failed — try again');
+    document.getElementById('setup-next-btn').disabled = false;
+    document.getElementById('setup-next-btn').textContent = '🎯 Start Playing';
   }
 }
 
@@ -227,7 +229,7 @@ async function saveTime() {
 // --- Load Sessions (real-time listener) ---
 let unsubscribe = null;
 
-const APP_VERSION = 'v6';
+const APP_VERSION = 'v7';
 
 function loadSessions() {
   if (unsubscribe) return;

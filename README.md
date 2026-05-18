@@ -64,22 +64,23 @@ Your app will be live at: `https://YOUR_USERNAME.github.io/spot-it-tracker/`
 
 ## Security Rules
 
-After the 30-day test mode expires, update your Firestore rules to keep the app working:
+The app uses Firebase Anonymous Auth to secure data. Update your Firestore rules:
 
-Go to **Firestore Database → Rules** and paste:
+1. Go to **Authentication → Sign-in method → Anonymous → Enable**
+2. Go to **Firestore Database → Rules** and paste:
 
 ```
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /spotit_sessions/{document} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
   }
 }
 ```
 
-> This allows open access to your `spotit_sessions` collection. Since the app is for personal use with a private Firebase project, this is fine. No one else has your Firebase config.
+> This ensures only authenticated app users can read/write data. Unauthenticated API calls are rejected.
 
 ## Updating the Manifest
 
