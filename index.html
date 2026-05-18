@@ -24,33 +24,7 @@
       <div id="setup-step-1" class="setup-step">
         <label for="setup-name">What's your name?</label>
         <input type="text" id="setup-name" placeholder="Enter your name..." maxlength="20" autocomplete="off">
-        <button class="btn btn-primary btn-large" id="setup-next-btn" onclick="setupNext()">Next →</button>
-      </div>
-
-      <!-- Step 2: Firebase Config -->
-      <div id="setup-step-2" class="setup-step hidden">
-        <label>Paste your Firebase config JSON:</label>
-        <textarea id="setup-firebase" rows="8" placeholder='{
-  "apiKey": "...",
-  "authDomain": "...",
-  "projectId": "...",
-  "storageBucket": "...",
-  "messagingSenderId": "...",
-  "appId": "..."
-}'></textarea>
-        <button class="btn btn-primary btn-large" id="setup-connect-btn" onclick="setupConnect()">🔗 Connect &amp; Start</button>
-        <button class="btn btn-link" onclick="toggleSetupHelp()">How do I get this?</button>
-        <div id="setup-help" class="setup-help hidden">
-          <ol>
-            <li>Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a></li>
-            <li>Click <strong>"Create a project"</strong> (name it anything, e.g. "spot-it")</li>
-            <li>Once created, click the <strong>Web icon (&lt;/&gt;)</strong> to add a web app</li>
-            <li>Name it anything (e.g. "spot-it-app"), click <strong>Register</strong></li>
-            <li>Copy the <code>firebaseConfig</code> object and paste it above</li>
-            <li>Go to <strong>Firestore Database</strong> → <strong>Create database</strong> → choose <strong>"Start in test mode"</strong> → pick any region → <strong>Create</strong></li>
-          </ol>
-          <p class="help-note">⚠️ Both you and your partner paste the <strong>same</strong> config so you share data!</p>
-        </div>
+        <button class="btn btn-primary btn-large" id="setup-next-btn" onclick="setupNext()">🎯 Start Playing</button>
       </div>
     </div>
   </div>

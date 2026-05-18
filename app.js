@@ -2,6 +2,16 @@
    Spot It! Tracker - Main Application Logic
    ============================================ */
 
+// --- Firebase Config (hardcoded — no user paste needed) ---
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBcWjyOHJIkSamNchEvuEL_t7wOcqEuo6w",
+  authDomain: "spot-it-tracker.firebaseapp.com",
+  projectId: "spot-it-tracker",
+  storageBucket: "spot-it-tracker.firebasestorage.app",
+  messagingSenderId: "644827496849",
+  appId: "1:644827496849:web:b7b80713f499a7fbcb5a30"
+};
+
 // --- State ---
 let db = null;
 let timerRunning = false;
@@ -25,14 +35,13 @@ const COLOR_PALETTE = [
 // --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
   registerSW();
-  const config = localStorage.getItem('spotit_firebase');
   const name = localStorage.getItem('spotit_player');
 
-  if (!name || !config) {
+  if (!name) {
     showSetupModal();
   } else {
     try {
-      initFirebase(JSON.parse(config));
+      initFirebase(FIREBASE_CONFIG);
       initApp(name);
     } catch (e) {
       console.error('Firebase init failed:', e);
@@ -64,74 +73,14 @@ function setupNext() {
     return;
   }
   localStorage.setItem('spotit_player', name);
-  document.getElementById('setup-step-1').classList.add('hidden');
-  document.getElementById('setup-step-2').classList.remove('hidden');
-
-  const existingConfig = localStorage.getItem('spotit_firebase');
-  if (existingConfig) {
-    document.getElementById('setup-firebase').value = existingConfig;
-  }
-}
-
-function setupConnect() {
-  const raw = document.getElementById('setup-firebase').value.trim();
-  if (!raw) {
-    showToast('Please paste your Firebase config');
-    return;
-  }
-
-  let config;
-  try {
-    let cleaned = raw;
-    // Strip "const firebaseConfig = " or similar prefix
-    cleaned = cleaned.replace(/^(?:const|let|var)\s+\w+\s*=\s*/, '');
-    // Strip trailing semicolons
-    cleaned = cleaned.replace(/;\s*$/, '');
-
-    try {
-      // Try parsing as valid JSON first
-      config = JSON.parse(cleaned);
-    } catch {
-      // Fall back: convert JS object notation to valid JSON
-      cleaned = cleaned.replace(/(\s*)(\w+)\s*:/g, '$1"$2":');
-      cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
-      config = JSON.parse(cleaned);
-    }
-  } catch (e) {
-    showToast('Invalid config — check your paste');
-    return;
-  }
-
-  if (!config.projectId) {
-    showToast('Missing projectId — check your config');
-    return;
-  }
-
-  localStorage.setItem('spotit_firebase', JSON.stringify(config));
 
   try {
-    initFirebase(config);
-    // Validate connection with a test read
-    db.collection('spotit_sessions').limit(1).get()
-      .then(() => {
-        initApp(localStorage.getItem('spotit_player'));
-      })
-      .catch((e) => {
-        console.error('Firestore test read failed:', e);
-        showToast('Connection failed — check config & Firestore setup');
-        document.getElementById('setup-connect-btn').disabled = false;
-        document.getElementById('setup-connect-btn').innerHTML = '🔗 Connect &amp; Start';
-      });
-    document.getElementById('setup-connect-btn').disabled = true;
-    document.getElementById('setup-connect-btn').textContent = 'Connecting...';
+    initFirebase(FIREBASE_CONFIG);
+    initApp(name);
   } catch (e) {
-    showToast('Firebase connection failed');
-    console.error(e);
+    console.error('Firebase init failed:', e);
+    showToast('Connection failed — try again');
   }
-}
-
-function toggleSetupHelp() {
-  document.getElementById('setup-help').classList.toggle('hidden');
 }
 
 // --- Firebase ---
@@ -572,9 +521,8 @@ function updatePlayerName() {
 }
 
 function confirmResetApp() {
-  if (!confirm('Reset local settings? You\'ll need to re-enter your name and Firebase config. Shared data is NOT deleted.')) return;
+  if (!confirm('Reset local settings? You\'ll need to re-enter your name. Shared data is NOT deleted.')) return;
   localStorage.removeItem('spotit_player');
-  localStorage.removeItem('spotit_firebase');
   location.reload();
 }
 
