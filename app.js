@@ -87,11 +87,16 @@ function setupConnect() {
     cleaned = cleaned.replace(/^(?:const|let|var)\s+\w+\s*=\s*/, '');
     // Strip trailing semicolons
     cleaned = cleaned.replace(/;\s*$/, '');
-    // Convert JS object notation to valid JSON (add quotes to unquoted keys)
-    cleaned = cleaned.replace(/(\s*)(\w+)\s*:/g, '$1"$2":');
-    // Remove trailing commas before } or ]
-    cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
-    config = JSON.parse(cleaned);
+
+    try {
+      // Try parsing as valid JSON first
+      config = JSON.parse(cleaned);
+    } catch {
+      // Fall back: convert JS object notation to valid JSON
+      cleaned = cleaned.replace(/(\s*)(\w+)\s*:/g, '$1"$2":');
+      cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
+      config = JSON.parse(cleaned);
+    }
   } catch (e) {
     showToast('Invalid config — check your paste');
     return;
