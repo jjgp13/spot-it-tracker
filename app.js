@@ -229,7 +229,7 @@ async function saveTime() {
 // --- Load Sessions (real-time listener) ---
 let unsubscribe = null;
 
-const APP_VERSION = 'v7';
+const APP_VERSION = 'v8';
 
 function loadSessions() {
   if (unsubscribe) return;
@@ -489,7 +489,6 @@ function renderProgress() {
           grid: { color: 'rgba(255,255,255,0.05)' }
         },
         y: {
-          reverse: true, // Lower is better!
           ticks: {
             color: '#A0A0B8',
             callback: (v) => formatTimeShort(v)
@@ -497,7 +496,7 @@ function renderProgress() {
           grid: { color: 'rgba(255,255,255,0.05)' },
           title: {
             display: true,
-            text: '← Faster is better',
+            text: '↑ Faster is better',
             color: '#A0A0B8',
             font: { size: 12 }
           }
