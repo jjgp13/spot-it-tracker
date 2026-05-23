@@ -202,6 +202,14 @@ async function saveTime() {
   const player = localStorage.getItem('spotit_player');
   const now = new Date();
 
+  // Use local time (Pacific) for date and time-of-day
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const localDate = `${year}-${month}-${day}`;
+  const hour = now.getHours();
+  const timeOfDay = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'night';
+
   document.getElementById('btn-save').disabled = true;
   document.getElementById('btn-save').textContent = 'Saving...';
 
@@ -209,7 +217,9 @@ async function saveTime() {
     await db.collection('spotit_sessions').add({
       player: player,
       seconds: seconds,
-      date: now.toISOString().split('T')[0],
+      date: localDate,
+      hour: hour,
+      timeOfDay: timeOfDay,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
@@ -229,7 +239,7 @@ async function saveTime() {
 // --- Load Sessions (real-time listener) ---
 let unsubscribe = null;
 
-const APP_VERSION = 'v8';
+const APP_VERSION = 'v9';
 
 function loadSessions() {
   if (unsubscribe) return;
@@ -332,13 +342,14 @@ function renderHistory() {
     const color = playerColors[s.player] || COLOR_PALETTE[0];
     const initial = s.player.charAt(0).toUpperCase();
     const dateStr = formatDate(s.date);
+    const todLabel = s.timeOfDay ? ` · ${s.timeOfDay}` : '';
 
     return `
       <div class="history-item">
         <div class="history-player" style="background:${color.bg};color:${color.text}">${initial}</div>
         <div class="history-details">
           <div class="history-name">${escHtml(s.player)}</div>
-          <div class="history-date">${dateStr}</div>
+          <div class="history-date">${dateStr}${todLabel}</div>
         </div>
         <div class="history-time">${formatTime(s.seconds)}</div>
         <button class="history-delete" onclick="deleteSession('${s.id}')" title="Delete">🗑️</button>
@@ -402,6 +413,34 @@ function renderProgress() {
         <div class="stat-player">${escHtml(player)}</div>
       </div>`;
   });
+
+  // Time-of-day stats (only if we have timeOfDay data)
+  const sessionsWithTod = allSessions.filter(s => s.timeOfDay);
+  if (sessionsWithTod.length > 0) {
+    const periods = ['morning', 'afternoon', 'night'];
+    const periodEmoji = { morning: '🌅', afternoon: '☀️', night: '🌙' };
+    let todHtml = '';
+
+    periods.forEach(period => {
+      const times = sessionsWithTod.filter(s => s.timeOfDay === period).map(s => s.seconds);
+      if (times.length > 0) {
+        const avg = times.reduce((a, b) => a + b, 0) / times.length;
+        todHtml += `
+          <div class="stat-card">
+            <div class="stat-label">${periodEmoji[period]} ${period}</div>
+            <div class="stat-value">${formatTime(avg)}</div>
+            <div class="stat-player">${times.length} sessions</div>
+          </div>`;
+      }
+    });
+
+    if (todHtml) {
+      statsHtml += `
+        <div class="stat-card" style="grid-column: 1 / -1">
+          <div class="stat-label">⏰ Average by Time of Day</div>
+        </div>` + todHtml;
+    }
+  }
 
   // Total sessions
   statsHtml += `
