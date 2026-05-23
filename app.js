@@ -239,7 +239,7 @@ async function saveTime() {
 // --- Load Sessions (real-time listener) ---
 let unsubscribe = null;
 
-const APP_VERSION = 'v9';
+const APP_VERSION = 'v10';
 
 function loadSessions() {
   if (unsubscribe) return;
@@ -414,32 +414,38 @@ function renderProgress() {
       </div>`;
   });
 
-  // Time-of-day stats (only if we have timeOfDay data)
+  // Time-of-day stats per player (only if we have timeOfDay data)
   const sessionsWithTod = allSessions.filter(s => s.timeOfDay);
   if (sessionsWithTod.length > 0) {
     const periods = ['morning', 'afternoon', 'night'];
     const periodEmoji = { morning: '🌅', afternoon: '☀️', night: '🌙' };
-    let todHtml = '';
 
-    periods.forEach(period => {
-      const times = sessionsWithTod.filter(s => s.timeOfDay === period).map(s => s.seconds);
-      if (times.length > 0) {
-        const avg = times.reduce((a, b) => a + b, 0) / times.length;
-        todHtml += `
-          <div class="stat-card">
-            <div class="stat-label">${periodEmoji[period]} ${period}</div>
-            <div class="stat-value">${formatTime(avg)}</div>
-            <div class="stat-player">${times.length} sessions</div>
-          </div>`;
+    players.forEach(player => {
+      const playerTod = sessionsWithTod.filter(s => s.player === player);
+      if (playerTod.length === 0) return;
+      const color = playerColors[player] || COLOR_PALETTE[0];
+      let todHtml = '';
+
+      periods.forEach(period => {
+        const times = playerTod.filter(s => s.timeOfDay === period).map(s => s.seconds);
+        if (times.length > 0) {
+          const avg = times.reduce((a, b) => a + b, 0) / times.length;
+          todHtml += `
+            <div class="stat-card">
+              <div class="stat-label">${periodEmoji[period]} ${period}</div>
+              <div class="stat-value" style="color:${color.bg}">${formatTime(avg)}</div>
+              <div class="stat-player">${times.length} sessions</div>
+            </div>`;
+        }
+      });
+
+      if (todHtml) {
+        statsHtml += `
+          <div class="stat-card" style="grid-column: 1 / -1">
+            <div class="stat-label">⏰ ${escHtml(player)}'s Avg by Time of Day</div>
+          </div>` + todHtml;
       }
     });
-
-    if (todHtml) {
-      statsHtml += `
-        <div class="stat-card" style="grid-column: 1 / -1">
-          <div class="stat-label">⏰ Average by Time of Day</div>
-        </div>` + todHtml;
-    }
   }
 
   // Total sessions
