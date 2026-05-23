@@ -545,14 +545,98 @@ main {
   font-size: 22px;
 }
 
-.stats-cards {
+.progress-filter {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.progress-filter .filter-btn {
+  padding: 6px 14px;
+  border-radius: 50px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.progress-filter .filter-btn.active {
+  background: var(--color-secondary);
+  color: var(--bg-primary);
+  border-color: var(--color-secondary);
+}
+
+.player-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.player-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.player-card-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.player-card-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.player-card-name {
+  flex: 1;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.player-card-toggle {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  transition: transform 0.2s;
+}
+
+.player-card.expanded .player-card-toggle {
+  transform: rotate(180deg);
+}
+
+.player-card-body {
+  display: none;
+  padding: 0 16px 16px;
+}
+
+.player-card.expanded .player-card-body {
+  display: block;
+}
+
+.player-stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
 .stat-card {
-  background: var(--bg-secondary);
+  background: var(--bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   padding: 14px;
@@ -578,6 +662,12 @@ main {
   font-size: 11px;
   color: var(--color-text-muted);
   margin-top: 2px;
+}
+
+.stats-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .chart-container {

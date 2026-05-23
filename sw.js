@@ -1,4 +1,4 @@
-const CACHE_NAME = 'spotit-v10';
+const CACHE_NAME = 'spotit-v11';
 const ASSETS = [
   './',
   './index.html',

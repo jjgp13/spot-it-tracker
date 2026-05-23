@@ -239,7 +239,7 @@ async function saveTime() {
 // --- Load Sessions (real-time listener) ---
 let unsubscribe = null;
 
-const APP_VERSION = 'v10';
+const APP_VERSION = 'v11';
 
 function loadSessions() {
   if (unsubscribe) return;
@@ -375,14 +375,127 @@ async function deleteSession(id) {
   }
 }
 
-// --- Progress Chart ---
+// --- Progress ---
+let progressFilter = 'all';
+
+function renderProgressFilter() {
+  const players = [...new Set(allSessions.map(s => s.player))];
+  const container = document.getElementById('progress-filter');
+  container.innerHTML = `<button class="filter-btn ${progressFilter === 'all' ? 'active' : ''}" onclick="setProgressFilter('all')">All</button>`;
+  players.forEach(p => {
+    const active = progressFilter === p ? 'active' : '';
+    container.innerHTML += `<button class="filter-btn ${active}" onclick="setProgressFilter('${escJs(p)}')">${escHtml(p)}</button>`;
+  });
+}
+
+function setProgressFilter(filter) {
+  progressFilter = filter;
+  renderProgressFilter();
+  renderProgressContent();
+  renderProgressChart();
+}
+
 function renderProgress() {
-  const statsContainer = document.getElementById('stats-cards');
+  renderProgressFilter();
+  renderProgressContent();
+  renderProgressChart();
+}
+
+function renderProgressContent() {
+  const container = document.getElementById('progress-content');
+  const players = [...new Set(allSessions.map(s => s.player))];
+
+  if (allSessions.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  if (progressFilter !== 'all') {
+    // Single player — show expanded, no card wrapper
+    container.innerHTML = buildPlayerStats(progressFilter, true);
+  } else {
+    // All players — collapsible cards
+    container.innerHTML = players.map(player => {
+      const color = playerColors[player] || COLOR_PALETTE[0];
+      const initial = player.charAt(0).toUpperCase();
+      return `
+        <div class="player-card" id="card-${escJs(player)}">
+          <div class="player-card-header" onclick="togglePlayerCard('${escJs(player)}')">
+            <div class="player-card-avatar" style="background:${color.bg};color:${color.text}">${initial}</div>
+            <div class="player-card-name">${escHtml(player)}</div>
+            <div class="player-card-toggle">▼</div>
+          </div>
+          <div class="player-card-body">
+            ${buildPlayerStats(player, false)}
+          </div>
+        </div>`;
+    }).join('');
+  }
+}
+
+function buildPlayerStats(player, showName) {
+  const color = playerColors[player] || COLOR_PALETTE[0];
+  const playerSessions = allSessions.filter(s => s.player === player);
+  const times = playerSessions.map(s => s.seconds);
+  if (times.length === 0) return '<p class="empty-state">No sessions yet</p>';
+
+  const best = Math.min(...times);
+  const avg = times.reduce((a, b) => a + b, 0) / times.length;
+  const worst = Math.max(...times);
+  const total = times.length;
+
+  let html = `<div class="player-stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">🏆 Best</div>
+      <div class="stat-value" style="color:${color.bg}">${formatTime(best)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">📊 Average</div>
+      <div class="stat-value" style="color:${color.bg}">${formatTime(avg)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">🐢 Worst</div>
+      <div class="stat-value" style="color:${color.bg}">${formatTime(worst)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">🎯 Sessions</div>
+      <div class="stat-value">${total}</div>
+    </div>`;
+
+  // Time-of-day breakdown
+  const periods = ['morning', 'afternoon', 'night'];
+  const periodEmoji = { morning: '🌅', afternoon: '☀️', night: '🌙' };
+  const todSessions = playerSessions.filter(s => s.timeOfDay);
+
+  if (todSessions.length > 0) {
+    periods.forEach(period => {
+      const periodTimes = todSessions.filter(s => s.timeOfDay === period).map(s => s.seconds);
+      if (periodTimes.length > 0) {
+        const periodAvg = periodTimes.reduce((a, b) => a + b, 0) / periodTimes.length;
+        html += `
+          <div class="stat-card">
+            <div class="stat-label">${periodEmoji[period]} ${period}</div>
+            <div class="stat-value" style="color:${color.bg}">${formatTime(periodAvg)}</div>
+            <div class="stat-player">${periodTimes.length} sessions</div>
+          </div>`;
+      }
+    });
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function togglePlayerCard(player) {
+  const card = document.getElementById(`card-${player}`);
+  if (card) card.classList.toggle('expanded');
+}
+
+function renderProgressChart() {
   const chartEmpty = document.getElementById('chart-empty');
   const chartContainer = document.querySelector('.chart-container');
 
   if (allSessions.length === 0) {
-    statsContainer.innerHTML = '';
     chartContainer.classList.add('hidden');
     chartEmpty.classList.remove('hidden');
     return;
@@ -391,95 +504,30 @@ function renderProgress() {
   chartContainer.classList.remove('hidden');
   chartEmpty.classList.add('hidden');
 
-  // Stats
-  const players = [...new Set(allSessions.map(s => s.player))];
-  let statsHtml = '';
+  const players = progressFilter === 'all'
+    ? [...new Set(allSessions.map(s => s.player))]
+    : [progressFilter];
 
-  players.forEach(player => {
-    const times = allSessions.filter(s => s.player === player).map(s => s.seconds);
-    const best = Math.min(...times);
-    const avg = times.reduce((a, b) => a + b, 0) / times.length;
-    const color = playerColors[player] || COLOR_PALETTE[0];
-
-    statsHtml += `
-      <div class="stat-card">
-        <div class="stat-label">🏆 Best</div>
-        <div class="stat-value" style="color:${color.bg}">${formatTime(best)}</div>
-        <div class="stat-player">${escHtml(player)}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">📊 Average</div>
-        <div class="stat-value" style="color:${color.bg}">${formatTime(avg)}</div>
-        <div class="stat-player">${escHtml(player)}</div>
-      </div>`;
-  });
-
-  // Time-of-day stats per player (only if we have timeOfDay data)
-  const sessionsWithTod = allSessions.filter(s => s.timeOfDay);
-  if (sessionsWithTod.length > 0) {
-    const periods = ['morning', 'afternoon', 'night'];
-    const periodEmoji = { morning: '🌅', afternoon: '☀️', night: '🌙' };
-
-    players.forEach(player => {
-      const playerTod = sessionsWithTod.filter(s => s.player === player);
-      if (playerTod.length === 0) return;
-      const color = playerColors[player] || COLOR_PALETTE[0];
-      let todHtml = '';
-
-      periods.forEach(period => {
-        const times = playerTod.filter(s => s.timeOfDay === period).map(s => s.seconds);
-        if (times.length > 0) {
-          const avg = times.reduce((a, b) => a + b, 0) / times.length;
-          todHtml += `
-            <div class="stat-card">
-              <div class="stat-label">${periodEmoji[period]} ${period}</div>
-              <div class="stat-value" style="color:${color.bg}">${formatTime(avg)}</div>
-              <div class="stat-player">${times.length} sessions</div>
-            </div>`;
-        }
-      });
-
-      if (todHtml) {
-        statsHtml += `
-          <div class="stat-card" style="grid-column: 1 / -1">
-            <div class="stat-label">⏰ ${escHtml(player)}'s Avg by Time of Day</div>
-          </div>` + todHtml;
-      }
-    });
-  }
-
-  // Total sessions
-  statsHtml += `
-    <div class="stat-card" style="grid-column: 1 / -1">
-      <div class="stat-label">🎯 Total Sessions</div>
-      <div class="stat-value">${allSessions.length}</div>
-    </div>`;
-
-  statsContainer.innerHTML = statsHtml;
-
-  // Chart - group by date per player, use earliest-to-latest order
+  // Chart - group by date per player
   const byPlayerDate = {};
   players.forEach(p => { byPlayerDate[p] = {}; });
 
-  // Use chronological order (oldest first)
   const chronological = [...allSessions].reverse();
   chronological.forEach(s => {
+    if (!players.includes(s.player)) return;
     if (!byPlayerDate[s.player][s.date]) {
       byPlayerDate[s.player][s.date] = [];
     }
     byPlayerDate[s.player][s.date].push(s.seconds);
   });
 
-  // Get all unique dates, sorted
-  const allDates = [...new Set(chronological.map(s => s.date))].sort();
+  const allDates = [...new Set(chronological.filter(s => players.includes(s.player)).map(s => s.date))].sort();
 
-  // Build datasets
   const datasets = players.map(player => {
     const color = playerColors[player] || COLOR_PALETTE[0];
     const data = allDates.map(date => {
       const times = byPlayerDate[player][date];
       if (!times) return null;
-      // Use the best time of the day
       return Math.min(...times);
     });
 
@@ -502,7 +550,6 @@ function renderProgress() {
     return `${months[parseInt(m) - 1]} ${parseInt(day)}`;
   });
 
-  // Destroy old chart
   if (progressChart) {
     progressChart.destroy();
   }
